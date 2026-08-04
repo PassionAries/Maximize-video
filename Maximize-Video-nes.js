@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name                Maximize Video
 // @name:zh-CN          视频网页全屏
-// @namespace           
+// @namespace           http://www.icycat.com
 // @description         Maximize all video players. Support Picture-in-picture.
 // @description:zh-CN   让所有视频网页全屏，开启画中画与倍速调整功能
 // @author              冻猫
@@ -273,7 +273,8 @@
         gv.speedBtn.style.display = "block"
         gv.speedBtn.style.visibility = "visible"
       }
-      handle.setSpeed(gv.speedRate, false)
+      //仅同步按钮文案，不强制改写播放器的原版倍速，避免覆盖页面自带的倍速控制
+      handle.syncSpeed()
       this.locate()
     },
     locate() {
@@ -425,6 +426,8 @@
     },
     hotKey(e) {
       const key = e.keyCode || e.which
+      //仅当页面存在视频播放器或 video 元素时快捷键才生效，避免干扰普通网页
+      if (!handle.hasVideoOnPage()) return
       //默认退出键为ESC
       if (key == 27) {
         maximize.playerControl()
@@ -472,6 +475,23 @@
         }
       } catch (e) {}
       return null
+    },
+    hasVideoOnPage() {
+      if (gv.player) return true
+      try {
+        return document.querySelector("video") != null
+      } catch (e) {
+        return false
+      }
+    },
+    syncSpeed() {
+      const v = handle.getVideo()
+      let rate = gv.speedRate
+      if (v && typeof v.playbackRate == "number" && v.playbackRate > 0) {
+        rate = v.playbackRate
+        gv.speedRate = rate
+      }
+      if (gv.speedBtn) tool.setHTML(gv.speedBtn, rate + "x")
     },
     setSpeed(rate, showTip) {
       rate = Math.max(0.25, Math.min(16, rate))
